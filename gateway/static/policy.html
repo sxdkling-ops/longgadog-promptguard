@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Detection policy · PromptGuard PH</title>
+<script>try{const s=localStorage.getItem('pgph.theme');const d=s?s==='dark':matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d);document.documentElement.dataset.theme=d?'dark':'light'}catch(_){}</script>
+<link rel="stylesheet" href="/static/pg.css">
+<style>
+  .split { display: grid; gap: 24px; align-items: start; }
+  @media (min-width: 1280px) { .split { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); } }
+  textarea#clients { min-height: 16rem; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+  kbd { font: 12px ui-monospace, Consolas, monospace; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-strong); }
+</style>
+</head>
+<body data-page="policy">
+<div id="shell"></div>
+<script src="/static/pg.js"></script>
+<main>
+  <div class="page">
+    <div class="page-header">
+      <div>
+        <h1>Detection policy</h1>
+        <p>What PromptGuard looks for and what it does about it. The client list is yours to edit; the built-in rules and the local AI layer run on every prompt and file.</p>
+      </div>
+    </div>
+
+    <div class="split">
+      <form class="card" id="form" aria-labelledby="h-clients">
+        <div class="card-head"><h2 id="h-clients">Client list</h2><span class="badge" id="count">– names</span></div>
+        <div class="card-body">
+          <label class="field" for="clients">Client and account names, one per line</label>
+          <textarea class="input" id="clients" spellcheck="false" aria-describedby="clients-help"></textarea>
+          <p class="help" id="clients-help">Matched case-insensitively and always redacted, even when the name looks like an ordinary word.</p>
+          <div id="form-error"></div>
+        </div>
+        <div class="card-foot">
+          <button class="btn primary" type="submit" id="save" disabled>Save client list</button>
+          <button class="btn secondary" type="button" id="discard" disabled>Discard changes</button>
+          <span class="help" style="margin:0 0 0 auto"><kbd>Ctrl</kbd> + <kbd>S</kbd> saves</span>
+        </div>
+      </form>
+
+      <section class="card" aria-labelledby="h-rules">
+        <div class="card-head"><h2 id="h-rules">What is detected</h2></div>
+        <!-- table-rule-exempt: short static reference list, not a record list -->
+        <div class="table-wrap"><table class="data">
+          <thead><tr><th scope="col"><span>Category</span></th><th scope="col"><span>Found by</span></th><th scope="col"><span>Action</span></th></tr></thead>
+          <tbody id="rules"></tbody>
+        </table></div>
+      </section>
+    </div>
+  </div>
+</main>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const { icon, toast } = window.PG;
+  const RULES = [
+    ['Passwords, API keys, tokens, private keys, connection strings', 'Rules', 'red', 'Always removed'],
+    ['TIN, SSS, PhilHealth, Pag-IBIG, UMID, PhilSys, passport', 'Rules', 'brand', 'Redacted'],
+    ['Card and bank account numbers', 'Rules', 'brand', 'Redacted'],
+    ['Emails and PH phone numbers', 'Rules', 'brand', 'Redacted'],
+    ['Names on your client list', 'Client list', 'brand', 'Redacted'],
+    ['Person names, organisations, addresses in free text (English, Tagalog, Taglish)', 'Local AI', 'brand', 'Redacted'],
+    ['Spreadsheet columns that hold people, organisations or addresses', 'Local AI', 'brand', 'Whole column redacted'],
+    ['Source code', 'Rules', '', 'Allowed, with secrets, hosts and usernames removed'],
+    ['IP and MAC addresses, internal hostnames, usernames, home folder paths', 'Rules', 'brand', 'Redacted'],
+    ['Diagnoses, medications, test results', 'Rules + Local AI', 'brand', 'Redacted'],
+    ['Age, sex, civil status, religion, nationality, blood type, birth date', 'Rules', 'brand', 'Redacted'],
+    ['Addresses, employers, salary and income figures, reference numbers', 'Rules + Local AI', 'brand', 'Redacted'],
+    ['Any text file: code, JSON, HTML, XML, logs, legacy encodings', 'Rules + Local AI', 'brand', 'Sent as redacted text'],
+    ['PDF, Word, PowerPoint, OpenDocument, RTF, legacy .doc and .ppt', 'Rules + Local AI', 'brand', 'Sent as redacted text'],
+    ['CSV, Excel (.xlsx, .xls), OpenDocument spreadsheets', 'Rules + Local AI', 'brand', 'Sent as redacted CSV or text'],
+    ['Images of any common format, scanned pages, embedded pictures', 'Local OCR + rules + Local AI', 'brand', 'Sent as redacted text'],
+    ['ZIP, TAR, GZIP, emails and Outlook messages', 'Opened, every member read', 'brand', 'Sent as redacted text'],
+    ['Government IDs and civil documents in images', 'Local OCR', 'red', 'Upload blocked'],
+    ['Unclear or textless images, audio, video, encrypted or password-protected files', 'File reader', 'red', 'Upload blocked'],
+    ['Anything, when the local AI check is not running or the content is too long to check', 'Gateway', 'red', 'Sending blocked'],
+  ];
+  $('rules').innerHTML = RULES.map(([what, by, tone, action]) =>
+    `<tr><td data-label="Category">${what}</td><td data-label="Found by"><span class="badge ${by.includes('Local AI') ? 'green' : ''}">${by}</span></td><td data-label="Action"><span class="badge ${tone}">${action}</span></td></tr>`).join('');
+
+  const box = $('clients'), save = $('save'), discard = $('discard');
+  let saved = '';
+  const names = () => box.value.split('\n').map((s) => s.trim()).filter(Boolean);
+  function sync() {
+    const dirty = box.value.trim() !== saved.trim();
+    save.disabled = discard.disabled = !dirty;
+    const n = names().length;
+    $('count').textContent = `${n} name${n === 1 ? '' : 's'}${dirty ? ' · unsaved' : ''}`;
+  }
+  function showError(text) {
+    $('form-error').innerHTML = text ? `<div class="notice error" role="alert" style="margin-top:12px">${icon('alert')}<div><strong>Couldn’t save the client list</strong>${text}</div></div>` : '';
+  }
+  async function load() {
+    try {
+      const d = await fetch('/clients').then((r) => r.json());
+      saved = box.value = d.clients.join('\n');
+      showError('');
+    } catch (_) { showError('The gateway did not answer. Check that it is still running, then reload this page.'); }
+    sync();
+  }
+  async function submit() {
+    if (save.disabled) return;
+    save.disabled = true;
+    try {
+      const r = await fetch('/clients', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clients: names() }) });
+      if (!r.ok) throw new Error();
+      saved = box.value = (await r.json()).clients.join('\n');
+      showError('');
+      toast(`Client list saved: ${names().length} names.`);
+    } catch (_) { showError('The gateway did not answer. Your changes are still in the box above.'); }
+    sync();
+  }
+  box.addEventListener('input', sync);
+  discard.addEventListener('click', () => { box.value = saved; sync(); box.focus(); });
+  $('form').addEventListener('submit', (e) => { e.preventDefault(); submit(); });
+  document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); submit(); } });
+  addEventListener('beforeunload', (e) => { if (!save.disabled) e.preventDefault(); });
+  load();
+})();
+</script>
+</body>
+</html>

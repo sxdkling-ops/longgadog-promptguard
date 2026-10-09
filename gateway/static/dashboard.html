@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audit overview · PromptGuard PH</title>
+<script>try{const s=localStorage.getItem('pgph.theme');const d=s?s==='dark':matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d);document.documentElement.dataset.theme=d?'dark':'light'}catch(_){}</script>
+<link rel="stylesheet" href="/static/pg.css">
+<style>
+  .bars { grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 16px 32px; }
+  @media (min-width: 640px) { table.data td:first-child { white-space: nowrap; } }
+</style>
+</head>
+<body data-page="dashboard">
+<div id="shell"></div>
+<script src="/static/pg.js"></script>
+<main>
+  <div class="page">
+    <div class="page-header">
+      <div>
+        <h1>Audit overview</h1>
+        <p>What PromptGuard caught before it reached a cloud chatbot. The log keeps categories and counts only: no prompt text, file content or original value is written to disk.</p>
+      </div>
+    </div>
+
+    <div class="tiles" id="tiles">
+      <div class="card tile"><div class="label">Events logged</div><div class="value" id="t-events">–</div><div class="hint">prompts and files reviewed</div></div>
+      <div class="card tile"><div class="label">Items redacted</div><div class="value" id="t-redacted">–</div><div class="hint">replaced with placeholders</div></div>
+      <div class="card tile"><div class="label">Secrets removed</div><div class="value" id="t-secrets">–</div><div class="hint">keys, passwords, tokens</div></div>
+      <div class="card tile"><div class="label">Files blocked</div><div class="value" id="t-blocked">–</div><div class="hint">unreadable on this device</div></div>
+    </div>
+
+    <section class="card" aria-labelledby="h-type">
+        <div class="card-head"><h2 id="h-type">Detections by type</h2></div>
+        <div class="card-body" id="by-type"></div>
+      </section>
+
+      <section class="card" aria-labelledby="h-events">
+        <div class="card-head">
+          <h2 id="h-events">Recent events</h2>
+          <div class="search"><span id="search-icon"></span><input class="input" type="search" id="q" aria-label="Search events" placeholder="Search site, action or type"></div>
+        </div>
+        <div id="events"></div>
+      </section>
+  </div>
+</main>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const { icon } = window.PG;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const ACTIONS = {
+    redacted: ['Redacted', 'brand'], file_sanitized: ['File sanitized', 'brand'],
+    file_blocked: ['File blocked', 'red'], file_clean: ['File clean', 'green'], file_protected: ['Locked attachment allowed', 'green'],
+  };
+  const COLS = [
+    { key: 'ts', label: 'Time', sort: true }, { key: 'site', label: 'Site', sort: true }, { key: 'source', label: 'Source', sort: true },
+    { key: 'action', label: 'Action', sort: true }, { key: 'items', label: 'Items found' },
+    { key: 'llm', label: 'Local AI', sort: true },
+  ];
+  const PAGE = 8;
+  const state = { status: 'loading', rows: [], q: '', sort: 'ts', dir: -1, page: 0, slow: false };
+  $('search-icon').outerHTML = icon('search');
+  setTimeout(() => { state.slow = true; if (state.status === 'loading') render(); }, 300);
+
+  function emptyBox(name, title, text) {
+    return `<div class="card-body"><div class="empty">${icon(name)}<h3>${title}</h3><p>${text}</p></div></div>`;
+  }
+
+  function render() {
+    const box = $('events');
+    if (state.status === 'loading') {
+      box.innerHTML = `<div class="card-body" role="status"><span class="sr-only">Loading…</span>${state.slow ? '<div style="display:grid;gap:12px">' + '<div class="skeleton" aria-hidden="true"></div>'.repeat(4) + '</div>' : ''}</div>`;
+      return;
+    }
+    if (state.status === 'error') {
+      box.innerHTML = `<div class="card-body" style="display:grid;gap:12px;justify-items:start"><div class="notice error" role="alert">${icon('alert')}<div><strong>Couldn’t load the audit log</strong>The gateway did not answer. Check that it is still running.</div></div><button class="btn secondary" id="retry" type="button">Try again</button></div>`;
+      $('retry').addEventListener('click', load);
+      return;
+    }
+    if (!state.rows.length) {
+      box.innerHTML = emptyBox('inbox', 'No events yet', 'Open a guarded chatbot such as ChatGPT, Gemini or Claude and paste something sensitive. It will show up here.');
+      return;
+    }
+    const q = state.q.trim().toLowerCase();
+    let rows = state.rows.filter((r) => !q || r.search.includes(q));
+    rows.sort((a, b) => (a[state.sort] > b[state.sort] ? 1 : a[state.sort] < b[state.sort] ? -1 : 0) * state.dir);
+    const pages = Math.max(1, Math.ceil(rows.length / PAGE));
+    state.page = Math.min(state.page, pages - 1);
+    const slice = rows.slice(state.page * PAGE, state.page * PAGE + PAGE);
+    if (!rows.length) {
+      box.innerHTML = emptyBox('search', 'No events match', `Nothing matches “${esc(state.q)}”. Try a site, an action or a type such as TIN.`);
+      return;
+    }
+    const head = COLS.map((c) => {
+      const on = state.sort === c.key;
+      const aria = c.sort ? ` aria-sort="${on ? (state.dir === 1 ? 'ascending' : 'descending') : 'none'}"` : '';
+      const inner = c.sort ? `<button type="button" data-sort="${c.key}">${c.label}${icon(on ? (state.dir === 1 ? 'up' : 'down') : 'sort')}</button>` : `<span>${c.label}</span>`;
+      return `<th scope="col" class="${c.num ? 'num' : ''}"${aria}>${inner}</th>`;
+    }).join('');
+    const body = slice.map((r) => `<tr>
+      <td data-label="Time">${esc(new Date(r.ts * 1000).toLocaleString())}</td>
+      <td data-label="Site">${esc(r.site)}</td>
+      <td data-label="Source">${esc(r.source)}</td>
+      <td data-label="Action"><span class="badge ${ACTIONS[r.action] ? ACTIONS[r.action][1] : ''}">${esc(ACTIONS[r.action] ? ACTIONS[r.action][0] : r.action)}</span></td>
+      <td data-label="Items found">${r.chips.length ? '<span class="chips">' + r.chips.map((c) => `<span class="badge ${c.startsWith('SECRET') ? 'red' : ''}">${esc(c)}</span>`).join('') + '</span>' : '<span class="muted">None</span>'}</td>
+      <td data-label="Local AI">${r.llm ? '<span class="badge green">' + icon('check') + 'Used</span>' : '<span class="muted">Rules only</span>'}</td></tr>`).join('');
+    const from = state.page * PAGE + 1, to = state.page * PAGE + slice.length;
+    box.innerHTML = `<div class="table-wrap"><table class="data"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>
+      <div class="pager"><span>Showing ${from}–${to} of ${rows.length}</span><div>
+        <button class="btn secondary" type="button" id="prev" ${state.page === 0 ? 'disabled' : ''}>Previous</button>
+        <button class="btn secondary" type="button" id="next" ${state.page >= pages - 1 ? 'disabled' : ''}>Next</button></div></div>`;
+    box.querySelectorAll('[data-sort]').forEach((b) => b.addEventListener('click', () => {
+      const k = b.dataset.sort;
+      if (state.sort === k) state.dir *= -1; else { state.sort = k; state.dir = k === 'ts' ? -1 : 1; }
+      state.page = 0; render();
+      box.querySelector(`[data-sort="${k}"]`).focus();
+    }));
+    $('prev').addEventListener('click', () => { state.page--; render(); });
+    $('next').addEventListener('click', () => { state.page++; render(); });
+  }
+
+  function renderTypes(byType) {
+    const entries = Object.entries(byType);
+    if (!entries.length) { $('by-type').innerHTML = `<div class="empty">${icon('shield')}<h3>Nothing detected yet</h3><p>Types appear here as soon as something is redacted.</p></div>`; return; }
+    const max = Math.max(...entries.map(([, n]) => n));
+    $('by-type').innerHTML = '<ul class="bars">' + entries.map(([t, n]) => `<li><div class="row"><span>${esc(t)}</span><span>${n.toLocaleString()}</span></div>
+      <div class="track" aria-hidden="true"><div class="fill ${t === 'SECRET' ? 'red' : ''}" style="width:${(n / max) * 100}%"></div></div></li>`).join('') + '</ul>';
+  }
+
+  let signature = '';
+  async function load() {
+    try {
+      const a = await fetch('/audit').then((r) => { if (!r.ok) throw new Error(); return r.json(); });
+      for (const [id, key] of [['t-events', 'events'], ['t-redacted', 'redacted'], ['t-secrets', 'secrets'], ['t-blocked', 'files_blocked']]) {
+        $(id).textContent = a.totals[key].toLocaleString();
+      }
+      const sig = a.totals.events + ':' + (a.events[0] ? a.events[0].ts : 0);
+      if (sig === signature && state.status === 'ready') return;   // nothing new: keep focus, sort and page as they are
+      signature = sig;
+      renderTypes(a.by_type);
+      state.rows = a.events.map((e) => {
+        const chips = Object.entries(e.counts).map(([k, v]) => `${k} ×${v}`);
+        const source = e.source + (e.filetype ? ' .' + e.filetype : '');
+        const label = ACTIONS[e.action] ? ACTIONS[e.action][0] : e.action;
+        return { ...e, site: e.site || '–', source, chips, llm: e.llm ? 1 : 0, search: [e.site, source, label, chips.join(' ')].join(' ').toLowerCase() };
+      });
+      state.status = 'ready';
+    } catch (_) {
+      state.status = 'error';
+      signature = '';
+    }
+    render();
+  }
+
+  $('q').addEventListener('input', (e) => { state.q = e.target.value; state.page = 0; render(); });
+  render();
+  load();
+  setInterval(load, 5000);
+})();
+</script>
+</body>
+</html>

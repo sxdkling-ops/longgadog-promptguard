@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+gateway/audit.sqlite3
+.venv/
+node_modules/
+# Third-party animation file downloaded for an early experiment. Not used, not ours to publish.
+*.riv
+# A bark recording supplied by a team member. Kept out of the repository until its licence is confirmed.
+desktop/assets/bark.*
+# The raw demo screen recording. The finished video is uploaded separately.
+video/public/demo*.mp4
+video/public/promo.mp4
+# Organiser handout and local tool settings: not part of the project.
+AppBuildersPH_Hackathon_2026_Notes.pdf
+.claude/

@@ -1,0 +1,6 @@
+Borrower,Email,Mobile,TIN,Tirahan,Branch,Loan Amount,Days Overdue,Remarks
+Maria Santos,maria.santos@example.com,0917 555 0142,123-456-789-000,"14 Mabini St, Marikina",Marikina,45000,32,Promised to pay Oct 15
+Paolo Mendoza,paolo.m@example.com,0918 555 0199,234-567-890-000,"Unit 4B, 221 Katipunan Ave, Quezon City",Quezon City,120000,61,Call SSS 34-1234567-8 to verify employment
+Cristina Dela Rosa,cdelarosa@example.org,0920 555 0111,345-678-901-000,"7 Rizal Ave, Pasig",Pasig,18500,5,Referred by Northwind Lending Corp
+Benjie Soriano,benjie.s@example.org,0915 555 0177,456-789-012-000,"32 Luna St, Makati",Makati,76000,90,For legal endorsement
+Lourdes Aquino,lourdes.a@example.com,0919 555 0123,567-890-123-000,"5 Bonifacio St, Taguig",Taguig,9800,12,No answer on landline (02) 8555-0123

@@ -1,0 +1,12 @@
+{
+  "comment": "Every app is guarded unless it is listed here. Trusted apps receive the original clipboard content. Keep this list to apps that cannot send data outside the company. Chat apps (Viber, Telegram, Discord, WhatsApp, Messenger, Teams, Slack), email, browsers and AI apps are deliberately NOT trusted.",
+  "trusted_processes": [
+    "explorer", "EXCEL", "WINWORD", "POWERPNT", "ONENOTE", "MSACCESS", "VISIO",
+    "notepad", "notepad++", "wordpad", "Code", "devenv", "sublime_text",
+    "WindowsTerminal", "powershell", "pwsh", "cmd", "conhost",
+    "Acrobat", "AcroRd32", "SumatraPDF", "mspaint", "SnippingTool", "ScreenClippingHost", "Photos", "CalculatorApp",
+    "soffice.bin", "PBIDesktop"
+  ],
+  "trusted_titles": [],
+  "shell_processes": ["SearchHost", "StartMenuExperienceHost", "ShellExperienceHost", "LockApp", "TextInputHost", "electron", "promptguard-desktop"]
+}

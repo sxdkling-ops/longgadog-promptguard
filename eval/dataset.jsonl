@@ -1,0 +1,46 @@
+{"text": "Paki-summarize: si Maria Santos, TIN 123-456-789-000, may overdue loan na 45,000 pesos.", "entities": [["PERSON", "Maria Santos"], ["TIN", "123-456-789-000"]]}
+{"text": "Customer email is liza.reyes@example.com and mobile 0917 555 0142.", "entities": [["EMAIL", "liza.reyes@example.com"], ["PHONE", "0917 555 0142"]]}
+{"text": "SSS no. 34-1234567-8 for employee Paolo Mendoza, start date Jan 5.", "entities": [["SSS", "34-1234567-8"], ["PERSON", "Paolo Mendoza"]]}
+{"text": "PhilHealth 12-345678901-2, Pag-IBIG 1234-5678-9012, paki-verify kung active pa.", "entities": [["PHILHEALTH", "12-345678901-2"], ["PAGIBIG", "1234-5678-9012"]]}
+{"text": "Card 4111 1111 1111 1111 exp 12/27 declined, ano pwede sabihin sa customer?", "entities": [["CARD", "4111 1111 1111 1111"]]}
+{"text": "aws key AKIAIOSFODNN7EXAMPLE not working in my script", "entities": [["SECRET", "AKIAIOSFODNN7EXAMPLE"]]}
+{"text": "DB_PASSWORD=Sup3rS3cret!2026 bakit ayaw mag connect", "entities": [["SECRET", "Sup3rS3cret!2026"]]}
+{"text": "connection string ko: postgres://admin:hunter2pass@10.0.0.5:5432/loans", "entities": [["SECRET", "postgres://admin:hunter2pass@10.0.0.5:5432/loans"]]}
+{"text": "Write a polite reminder for Atty. Ramon Villanueva about the hearing.", "entities": [["PERSON", "Ramon Villanueva"]]}
+{"text": "yung client natin na Northwind Lending Corp gusto mag-restructure ng loan", "entities": [["CLIENT", "Northwind Lending Corp"]]}
+{"text": "kay jun-jun bautista yung account na delinquent, taga 14 Mabini St, Barangay San Roque, Marikina", "entities": [["PERSON", "jun-jun bautista"], ["ADDRESS", "14 Mabini St, Barangay San Roque, Marikina"]]}
+{"text": "Explain the difference between gross and net income in simple terms.", "entities": []}
+{"text": "Gumawa ng 5 tips para sa customer service agents tuwing peak season.", "entities": []}
+{"text": "Our Q3 revenue was 1,250,000 pesos, up 12% from Q2. Draft a summary.", "entities": []}
+{"text": "UMID CRN 0028-1234567-9 po ang binigay niya", "entities": [["UMID", "0028-1234567-9"]]}
+{"text": "Passport P1234567A, flight on Oct 21", "entities": [["PASSPORT", "P1234567A"]]}
+{"text": "savings account no: 001234567890, paki-compute ng interest", "entities": [["BANK_ACCT", "001234567890"]]}
+{"text": "my token ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij keeps returning 401", "entities": [["SECRET", "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij"]]}
+{"text": "Name: Cristina Dela Rosa\nAddress: Unit 4B, 221 Katipunan Ave, Quezon City\nMobile: +63 918 555 0199", "entities": [["PERSON", "Cristina Dela Rosa"], ["ADDRESS", "Unit 4B, 221 Katipunan Ave, Quezon City"], ["PHONE", "+63 918 555 0199"]]}
+{"text": "Please email hr@tala-verde.example about Ms. Angelica Cruz's clearance.", "entities": [["EMAIL", "hr@tala-verde.example"], ["PERSON", "Angelica Cruz"]]}
+{"text": "National ID 1234-5678-9012-3456 na-verify na", "entities": [["PHILSYS", "1234-5678-9012-3456"]]}
+{"text": "TIN niya 987654321000, paki-fill up ng form 2316", "entities": [["TIN", "987654321000"]]}
+{"text": "Nag-reklamo si Mang Tonyo kahapon tungkol sa billing", "entities": [["PERSON", "Mang Tonyo"]]}
+{"text": "Translate to Tagalog: Thank you for your patience, we will get back within 24 hours.", "entities": []}
+{"text": "Ticket 2026-10-0915 opened at 14:35, order total 12,499.00", "entities": []}
+{"text": "Boss ko si engr. rodel pascual ng Bayanihan Microfinance, pa-draft ng resignation letter", "entities": [["PERSON", "rodel pascual"], ["CLIENT", "Bayanihan Microfinance"]]}
+{"text": "JWT eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcDEF123456ghiJKL bakit expired agad", "entities": [["SECRET", "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcDEF123456ghiJKL"]]}
+{"text": "api_key: 9f8e7d6c5b4a39281706f5e4d3c2b1a0", "entities": [["SECRET", "9f8e7d6c5b4a39281706f5e4d3c2b1a0"]]}
+{"text": "Si Gng. Lourdes Aquino po ay may balance na 3,200; landline (02) 8555-0123", "entities": [["PERSON", "Lourdes Aquino"], ["PHONE", "(02) 8555-0123"]]}
+{"text": "def add(a, b):\n    return a + b\n\nprint(add(2, 3))", "entities": []}
+{"text": "Paki-check kung tama: 0917-555-0171 at 09185550188 ang contact nina Bea at Marco", "entities": [["PHONE", "0917-555-0171"], ["PHONE", "09185550188"], ["PERSON", "Bea"], ["PERSON", "Marco"]]}
+{"text": "Send SOA to Tala Verde Holdings c/o Mr. Benjie Soriano, benjie.s@example.org", "entities": [["CLIENT", "Tala Verde Holdings"], ["PERSON", "Benjie Soriano"], ["EMAIL", "benjie.s@example.org"]]}
+{"text": "Patient: JUAN SANTOS DELA CRUZ\nAge: 54\nDiagnosis: Type 2 diabetes mellitus with hypertension\nMedications: Metformin 500mg twice daily", "entities": [["PERSON", "JUAN SANTOS DELA CRUZ"], ["DEMOGRAPHIC", "54"], ["HEALTH", "Type 2 diabetes mellitus with hypertension"], ["HEALTH", "Metformin 500mg twice daily"]]}
+{"text": "LOA Number: 59017576, Member ID AB-1234567, attending physician: Dr. Liza Ramos", "entities": [["REF_NO", "59017576"], ["REF_NO", "AB-1234567"], ["PERSON", "Liza Ramos"]]}
+{"text": "si nanay ko na-diagnose ng stage 2 breast cancer last month, ano dapat itanong sa oncologist?", "entities": [["HEALTH", "stage 2 breast cancer"]]}
+{"text": "Date of Birth: March 4, 1999\nCivil Status: Married\nReligion: Roman Catholic\nBlood type: O+", "entities": [["DOB", "March 4, 1999"], ["DEMOGRAPHIC", "Married"], ["DEMOGRAPHIC", "Roman Catholic"], ["DEMOGRAPHIC", "O+"]]}
+{"text": "ssh deploy@10.20.30.44 keeps timing out, the jump host is bastion01.corp.internal:2222", "entities": [["IP_ADDRESS", "10.20.30.44"], ["INTERNAL_HOST", "bastion01.corp.internal:2222"]]}
+{"text": "Authorization: Bearer abcDEF123456ghiJKL789mnoPQR returns 403 from the staging API", "entities": [["SECRET", "abcDEF123456ghiJKL789mnoPQR"]]}
+{"text": "username: jdelacruz\npassword: Tr0ub4dor&3xyz\nVPN keeps disconnecting on /home/jdelacruz/vpn.log", "entities": [["USERNAME", "jdelacruz"], ["SECRET", "Tr0ub4dor&3xyz"]]}
+{"text": "STRIPE_KEY=pgdemo_k9Qz7Lm2Xv8Tn4Rb6Wd1Hs5Y and the device MAC is 3C:22:FB:9A:10:7E", "entities": [["SECRET", "pgdemo_k9Qz7Lm2Xv8Tn4Rb6Wd1Hs5Y"], ["MAC_ADDRESS", "3C:22:FB:9A:10:7E"]]}
+{"text": "Customer complaint: delivery address: 88 Sampaguita St, Brgy. Holy Spirit, Quezon City. Order was late by 3 days.", "entities": [["ADDRESS", "88 Sampaguita St, Brgy. Holy Spirit, Quezon City"]]}
+{"text": "Employer: Solidbuild Trading Inc\nMonthly income: PHP 38,500\nCredit limit 150,000", "entities": [["ORG", "Solidbuild Trading Inc"], ["FINANCIAL", "38,500"], ["FINANCIAL", "150,000"]]}
+{"text": "OTP is 482913, sabi ng agent ibigay ko raw", "entities": [["SECRET", "482913"]]}
+{"text": "Write a SQL query that counts orders per month from the orders table.", "entities": []}
+{"text": "What are common symptoms of dehydration and when should someone see a doctor?", "entities": []}
+{"text": "Explain the difference between TCP and UDP for a beginner.", "entities": []}

@@ -1,0 +1,4 @@
+# One client / account name per line. Matched case-insensitively. Fictional demo entries below.
+Northwind Lending Corp
+Bayanihan Microfinance
+Tala Verde Holdings

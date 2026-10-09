@@ -1,0 +1,10 @@
+fastapi==0.115.6
+uvicorn==0.34.0
+pydantic==2.10.4
+pymupdf==1.28.2
+openpyxl==3.1.5
+rapidocr-onnxruntime==1.4.4
+xlrd==2.0.1
+olefile==0.47
+pillow-heif==1.8.0
+python-docx==1.1.2  # only used by eval/formats_test.py to generate a sample

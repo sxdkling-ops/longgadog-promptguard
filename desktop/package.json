@@ -1,0 +1,15 @@
+{
+  "name": "promptguard-desktop",
+  "version": "0.1.0",
+  "description": "PromptGuard PH desktop guard: runs the local gateway and guards the clipboard for AI apps on this PC.",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron . --dev",
+    "guard": "electron .",
+    "test": "node test-guard.js"
+  },
+  "devDependencies": {
+    "electron": "33.2.1"
+  }
+}

@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local proof · PromptGuard PH</title>
+<script>try{const s=localStorage.getItem('pgph.theme');const d=s?s==='dark':matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d);document.documentElement.dataset.theme=d?'dark':'light'}catch(_){}</script>
+<link rel="stylesheet" href="/static/pg.css">
+<style>
+  /* Verdict band: the one thing a viewer must read first. */
+  .verdict { display: flex; align-items: center; gap: 16px; padding: 20px; border-radius: 12px; border: 1px solid var(--n-info-bd); background: var(--n-info-bg); color: var(--n-info-fg); }
+  .verdict.off { border-color: var(--n-ok-bd); background: var(--n-ok-bg); color: var(--n-ok-fg); }
+  .verdict .dot { display: grid; place-items: center; flex: none; width: 56px; height: 56px; border-radius: 999px; background: var(--surface); border: 1px solid currentColor; }
+  .verdict .dot .icon { width: 28px; height: 28px; }
+  .verdict .title { font-size: 24px; font-weight: 600; line-height: 1.25; }
+  .verdict .sub { font-size: 16px; margin-top: 2px; }
+  .verdict .text { min-width: 0; flex: 1; }
+  .verdict .probe { display: none; font-size: 14px; white-space: nowrap; }
+  @media (min-width: 768px) { .verdict .probe { display: block; } }
+
+  /* Evidence tiles: icon, label, value, status word. */
+  .tile { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; align-items: start; }
+  .tile .glyph { grid-row: span 3; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 8px; background: var(--b-brand-bg); color: var(--b-brand-fg); }
+  .tile .value { font-size: 24px; margin-top: 0; overflow-wrap: anywhere; }
+  .tile .hint { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+
+  .split { display: grid; gap: 24px; align-items: stretch; }
+  @media (min-width: 1024px) { .split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .split > .card { display: flex; flex-direction: column; }
+  .split > .card > .card-body { flex: 1; }
+  textarea#box { min-height: 10rem; resize: vertical; display: block; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+  .card.drag { outline: 2px dashed var(--ring); outline-offset: 2px; }
+  .samples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .samples .btn { font-weight: 500; font-size: 14px; }
+  .card-foot .btn.primary { margin-left: auto; }
+  @media (max-width: 479px) { .card-foot .btn { width: 100%; margin-left: 0; } }
+  #result pre.payload { max-height: 16rem; }
+  .sub-h { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 8px; }
+
+  /* Where each step ran: a left-to-right path on wide screens, a stack on phones. */
+  .flow { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  @media (min-width: 900px) { .flow { grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 28px; } }
+  .step { position: relative; display: grid; gap: 8px; align-content: start; padding: 16px; border-radius: 12px; border: 1px solid var(--border); background: var(--sunken); min-width: 0; }
+  .step .top { display: flex; align-items: center; gap: 8px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+  .step .top .icon { color: var(--muted); }
+  .step .detail { font-size: 14px; color: var(--muted); }
+  .step .time { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .step.done { border-color: var(--n-ok-bd); background: var(--n-ok-bg); }
+  .step.done .top .icon { color: var(--n-ok-fg); }
+  .step.never { border-style: dashed; border-color: var(--border-strong); background: transparent; }
+  @media (min-width: 900px) {
+    .step:not(:last-child)::after { content: ""; position: absolute; top: 50%; right: -21px; width: 10px; height: 10px; border-top: 2px solid var(--border-strong); border-right: 2px solid var(--border-strong); rotate: 45deg; translate: 0 -50%; }
+    .step.gap::after { display: none; }
+  }
+</style>
+</head>
+<body data-page="proof">
+<div id="shell"></div>
+<script src="/static/pg.js"></script>
+<main>
+  <div class="page">
+    <div class="page-header">
+      <div>
+        <h1>Local proof</h1>
+        <p>Turn the network off, then check something. Everything on this page is measured live on this PC.</p>
+      </div>
+    </div>
+
+    <div class="verdict" id="verdict" role="status" aria-live="polite">
+      <span class="dot" id="v-icon"></span>
+      <div class="text">
+        <p class="title" id="v-title">Testing the network…</p>
+        <p class="sub" id="v-sub">Trying to reach a public address from this browser.</p>
+      </div>
+      <p class="probe" id="v-probe">Live test, every 3 seconds</p>
+    </div>
+
+    <section aria-labelledby="h-evidence">
+      <h2 class="sr-only" id="h-evidence">What is running on this PC</h2>
+      <div class="tiles">
+        <div class="card tile">
+          <span class="glyph" id="g-out"></span>
+          <div class="label">Connections leaving this PC</div>
+          <div class="value" id="t-out">–</div>
+          <div class="hint"><span class="badge" id="b-out">Checking…</span><span id="t-local"></span></div>
+        </div>
+        <div class="card tile">
+          <span class="glyph" id="g-llm"></span>
+          <div class="label">Local LLM</div>
+          <div class="value" id="t-llm">–</div>
+          <div class="hint"><span class="badge" id="b-llm">Checking…</span><span>Ollama, 127.0.0.1:11434</span></div>
+        </div>
+        <div class="card tile">
+          <span class="glyph" id="g-ocr"></span>
+          <div class="label">Local OCR</div>
+          <div class="value">RapidOCR</div>
+          <div class="hint"><span class="badge" id="b-ocr">Checking…</span><span>ONNX Runtime, in the gateway</span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="split">
+      <section class="card" id="try" aria-labelledby="h-try">
+        <div class="card-head"><h2 id="h-try">Check something</h2><span class="badge">Fictional data only</span></div>
+        <div class="card-body">
+          <label class="field" for="box">Text to check</label>
+          <textarea class="input" id="box" spellcheck="false" aria-describedby="box-help"></textarea>
+          <p class="help" id="box-help">Type, paste, or drop a file on this card. Ctrl + Enter checks the text.</p>
+          <div class="samples" role="group" aria-label="Fictional samples">
+            <button class="btn secondary" type="button" data-sample="taglish">Taglish name</button>
+            <button class="btn secondary" type="button" data-sample="creds">Login details</button>
+            <button class="btn secondary" type="button" data-sample="patient">Patient note</button>
+          </div>
+        </div>
+        <div class="card-foot">
+          <label class="btn secondary" for="file" id="file-btn">Check a file or image<input class="sr-only" type="file" id="file"></label>
+          <button class="btn primary" type="button" id="check">Check on this device</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="h-result">
+        <div class="card-head"><h2 id="h-result">What would be sent</h2><span class="badge" id="r-badge">Nothing checked yet</span></div>
+        <div class="card-body" id="result" aria-live="polite"></div>
+      </section>
+    </div>
+
+    <section class="card" aria-labelledby="h-where">
+      <div class="card-head"><h2 id="h-where">Where each step ran</h2><span class="badge" id="w-badge">Waiting for a check</span></div>
+      <div class="card-body"><ol class="flow" id="flow"></ol></div>
+    </section>
+  </div>
+</main>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const { icon, toast } = window.PG;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const sid = 'proof-' + Math.random().toString(36).slice(2) + Date.now();
+  const SAMPLES = {
+    taglish: 'pa-follow up kay jun-jun bautista ng Northwind Lending Corp, TIN 123-456-789-000, taga 14 Mabini St, Marikina. overdue na siya.',
+    creds: 'Server login for the staging box\nUsername: admin.ops\nPassword: Tr0ub4dor&3\nIP 10.20.30.44',
+    patient: 'Patient Liza Dimaculangan, 47, female, diagnosed with type 2 diabetes. Contact 0917 555 0142. PhilHealth 12-345678901-2.',
+  };
+  let internet = null, llmModel = 'local LLM', working = false;
+
+  $('g-out').innerHTML = icon('cloud');
+  $('g-llm').innerHTML = icon('chat');
+  $('g-ocr').innerHTML = icon('search');
+  $('box').value = SAMPLES.taglish;
+
+  const badge = (el, tone, name, text) => { el.className = 'badge ' + tone; el.innerHTML = icon(name) + esc(text); };
+  const ms = (n) => (n >= 1000 ? (n / 1000).toFixed(1) + ' s' : Math.round(n) + ' ms');
+
+  // A real test, not a setting: try to reach a public address. With the network off this fails.
+  async function probeInternet() {
+    let reachable = false;
+    if (navigator.onLine) {
+      try {
+        await fetch('https://www.gstatic.com/generate_204?' + Date.now(), { mode: 'no-cors', cache: 'no-store', signal: AbortSignal.timeout(2500) });
+        reachable = true;
+      } catch (_) { reachable = false; }
+    }
+    if (reachable === internet) return;
+    internet = reachable;
+    $('verdict').classList.toggle('off', !reachable);
+    $('v-icon').innerHTML = icon(reachable ? 'cloud' : 'lock');
+    $('v-title').textContent = reachable ? 'Network is on' : 'Network is off';
+    $('v-sub').textContent = reachable
+      ? 'Turn on Airplane mode to see the same checks work with no internet.'
+      : 'This PC cannot reach the internet. The checks below still work.';
+  }
+
+  async function refresh() {
+    try {
+      const h = await fetch('/health').then((r) => r.json());
+      const out = h.connections ? h.connections.outside : null;
+      $('t-out').textContent = out === null ? '–' : out;
+      if (out === 0) badge($('b-out'), 'green', 'check', 'Nothing left');
+      else if (out) badge($('b-out'), 'amber', 'alert', 'Outside connection made');
+      $('t-local').textContent = h.connections ? `${h.connections.local} to this PC only` : '';
+      llmModel = h.llm.model || llmModel;
+      $('t-llm').textContent = h.llm.available ? h.llm.model : 'Not running';
+      badge($('b-llm'), h.llm.available ? 'green' : 'red', h.llm.available ? 'check' : 'alert', h.llm.available ? 'Running here' : 'Checks are refused');
+      badge($('b-ocr'), 'green', 'check', 'Running here');
+    } catch (_) {
+      $('t-llm').textContent = 'Gateway offline';
+      for (const id of ['b-out', 'b-llm', 'b-ocr']) badge($(id), 'red', 'alert', 'No answer');
+    }
+  }
+
+  // steps: [icon, name, detail, time or null]. state: 'idle' | 'busy' | 'done'.
+  function flow(steps, state) {
+    const cls = state === 'done' ? 'done' : '';
+    $('flow').innerHTML = steps.map(([ic, name, detail, time], i) => `<li class="step ${cls}${i === steps.length - 1 ? ' gap' : ''}">
+        <div class="top">${icon(ic)}<span>${name}</span></div>
+        <div class="time">${state === 'done' ? (time || 'Done') : state === 'busy' ? '…' : '–'}</div>
+        <div><span class="badge ${state === 'done' ? 'green' : ''}">${state === 'done' ? icon('check') + 'This PC' : state === 'busy' ? 'Running on this PC' : 'Runs on this PC'}</span></div>
+        <div class="detail">${detail}</div></li>`).join('') +
+      `<li class="step never"><div class="top">${icon('cloud')}<span>Cloud detector</span></div>
+        <div class="time">${state === 'done' ? '0 bytes' : '–'}</div>
+        <div><span class="badge">${icon('x')}Nothing sent</span></div>
+        <div class="detail">No cloud service is used to find sensitive data.</div></li>`;
+    const b = $('w-badge');
+    if (state === 'done') badge(b, internet ? 'brand' : 'green', internet ? 'info' : 'lock', internet ? 'Ran with the network on' : 'Ran with the network off');
+    else { b.className = 'badge'; b.textContent = state === 'busy' ? 'Running…' : 'Waiting for a check'; }
+  }
+  const TEXT_STEPS = (r, total) => [
+    ['list', 'Rules and client list', 'Patterns for IDs, keys, passwords and known names.', r && ms(r.ms_rules)],
+    ['chat', `Local LLM`, `${esc(r ? r.llm.model : llmModel)} reads for names and context.`, r && ms(r.llm.ms || 0)],
+    ['checkCircle', 'Whole check', 'From pressing the button to the result.', total && ms(total)],
+  ];
+  const FILE_STEPS = (ocr, model, total) => [
+    [ocr ? 'search' : 'inbox', ocr ? 'File reader and local OCR' : 'File reader', ocr ? 'The picture is read into text here.' : 'The file is opened and read here.', total && 'Done'],
+    ['chat', 'Rules and local LLM', `${esc(model || llmModel)} and the rules check the text.`, total && 'Done'],
+    ['checkCircle', 'Whole check', 'From choosing the file to the result.', total && ms(total)],
+  ];
+
+  function setWorking(on) {
+    working = on;
+    $('check').disabled = on;
+    $('file').disabled = on;
+    $('file-btn').style.opacity = on ? '.5' : '';
+    $('file-btn').style.cursor = on ? 'not-allowed' : '';
+  }
+  function idle() {
+    $('result').innerHTML = `<div class="empty">${icon('shield')}<h3>Nothing checked yet</h3><p>The sanitized copy appears here. The original is never shown or stored.</p></div>`;
+  }
+  function busy(text) {
+    $('r-badge').className = 'badge';
+    $('r-badge').textContent = text;
+    $('result').innerHTML = '<div role="status" style="display:grid;gap:12px"><span class="sr-only">Checking…</span><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>';
+  }
+  function failed(text, steps) {
+    badge($('r-badge'), 'red', 'alert', 'Not checked');
+    $('result').innerHTML = `<div class="notice error" role="alert">${icon('alert')}<div><strong>Couldn’t check this</strong>${esc(text)}</div></div>`;
+    flow(steps, 'idle');
+  }
+  const chips = (counts) => { const e = Object.entries(counts); return e.length ? `<p class="sub-h" style="margin-top:16px">Replaced</p><div class="chips">${
+    e.map(([t, c]) => `<span class="badge ${t === 'SECRET' ? 'red' : 'brand'}">${esc(t)} ×${c}</span>`).join('')}</div>` : ''; };
+
+  async function checkText() {
+    if (working) return;
+    const text = $('box').value;
+    if (!text.trim()) { toast('Type or paste something to check first.', 'error'); $('box').focus(); return; }
+    setWorking(true);
+    busy('Checking on this device…');
+    flow(TEXT_STEPS(), 'busy');
+    await probeInternet();
+    try {
+      const started = performance.now();
+      const r = await fetch('/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: sid, text, llm: true }) }).then((x) => x.json());
+      if (r.refused) { failed(r.refused, TEXT_STEPS()); return; }
+      const counts = {};
+      for (const f of r.findings) counts[f.type] = (counts[f.type] || 0) + 1;
+      const n = r.findings.length;
+      badge($('r-badge'), n ? 'brand' : 'green', n ? 'shield' : 'check', n ? `${n} item${n > 1 ? 's' : ''} replaced` : 'Nothing sensitive');
+      $('result').innerHTML = `<p class="sub-h">Sanitized text</p><pre class="payload" tabindex="0" aria-label="Sanitized text">${esc(r.sanitized)}</pre>${chips(counts)}`;
+      flow(TEXT_STEPS(r, performance.now() - started), 'done');
+    } catch (_) { failed('The gateway did not answer. Check that it is still running.', TEXT_STEPS()); }
+    finally { setWorking(false); refresh(); }
+  }
+
+  async function checkFile(file) {
+    if (working) return;
+    const ocrGuess = /\.(png|jpe?g|webp|bmp|gif|tiff?|heic|pdf)$/i.test(file.name);
+    setWorking(true);
+    busy(`Reading ${file.name} on this device…`);
+    flow(FILE_STEPS(ocrGuess), 'busy');
+    await probeInternet();
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      let bin = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      const started = performance.now();
+      const r = await fetch('/scan-file', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sid, filename: file.name, data_b64: btoa(bin), site: 'proof' }) }).then((x) => x.json());
+      const took = performance.now() - started;
+      const ocr = /image|pdf/.test(r.kind || '') || ocrGuess;
+      const model = r.llm && r.llm.model;
+      if (r.blocked) {
+        badge($('r-badge'), 'red', 'lock', 'Blocked');
+        $('result').innerHTML = `<div class="notice error" role="alert">${icon('lock')}<div><strong>Blocked on this device</strong>${esc(r.reason)}</div></div>
+          <p class="help" style="margin-top:12px">Nothing from this file would be sent.</p>`;
+        flow(FILE_STEPS(ocr, model, took), 'done');
+        return;
+      }
+      const text = new TextDecoder().decode(Uint8Array.from(atob(r.out_b64), (c) => c.charCodeAt(0)));
+      badge($('r-badge'), r.total ? 'brand' : 'green', r.total ? 'shield' : 'check', r.total ? `${r.total} item${r.total > 1 ? 's' : ''} replaced` : 'Nothing sensitive');
+      $('result').innerHTML = `<p class="help" style="margin:0 0 8px">Sent as <strong>${esc(r.out_name)}</strong>, not the original.</p>
+        <pre class="payload" tabindex="0" aria-label="Sanitized copy">${esc(text.slice(0, 1500))}</pre>${chips(r.counts || {})}`;
+      flow(FILE_STEPS(ocr, model, took), 'done');
+    } catch (_) { failed('The gateway did not answer. Check that it is still running.', FILE_STEPS(ocrGuess)); }
+    finally { setWorking(false); refresh(); }
+  }
+
+  $('check').addEventListener('click', checkText);
+  $('file').addEventListener('change', () => { const f = $('file').files[0]; $('file').value = ''; if (f) checkFile(f); });
+  for (const b of document.querySelectorAll('[data-sample]')) b.addEventListener('click', () => { $('box').value = SAMPLES[b.dataset.sample]; $('box').focus(); });
+  document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); checkText(); } });
+  const card = $('try');
+  card.addEventListener('dragover', (e) => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) { e.preventDefault(); card.classList.add('drag'); } });
+  card.addEventListener('dragleave', (e) => { if (!card.contains(e.relatedTarget)) card.classList.remove('drag'); });
+  card.addEventListener('drop', (e) => { card.classList.remove('drag'); const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) { e.preventDefault(); checkFile(f); } });
+
+  idle(); flow(TEXT_STEPS(), 'idle');
+  probeInternet(); refresh();
+  setInterval(probeInternet, 3000);
+  setInterval(refresh, 3000);
+})();
+</script>
+</body>
+</html>

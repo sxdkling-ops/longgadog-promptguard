@@ -1,0 +1,56 @@
+{
+  "manifest_version": 3,
+  "name": "PromptGuard PH",
+  "version": "0.9.0",
+  "description": "Browser sensor for the PromptGuard PH desktop mascot: checks text and files on-device before they leave through any website.",
+  "host_permissions": [
+    "http://127.0.0.1:8787/*",
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "exclude_matches": [
+        "http://127.0.0.1:8787/*",
+        "http://localhost:8787/*"
+      ],
+      "js": [
+        "page-hook.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN",
+      "match_about_blank": true,
+      "match_origin_as_fallback": true
+    },
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "adapters.js",
+        "content.js"
+      ],
+      "run_at": "document_start",
+      "exclude_matches": [
+        "http://127.0.0.1:8787/*",
+        "http://localhost:8787/*"
+      ],
+      "all_frames": true,
+      "match_about_blank": true,
+      "match_origin_as_fallback": true
+    }
+  ],
+  "permissions": [
+    "alarms",
+    "scripting"
+  ]
+}
